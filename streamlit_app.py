@@ -7,10 +7,6 @@ from datetime import datetime
 from ultralytics import YOLO
 import plotly.express as px
 from video_processing import load_model, process_frame, draw_parking_overlay
-try:
-    from video_processing import load_model, process_frame, draw_parking_overlay
-except ImportError:
-    from video_processing import load_model, process_frame, draw_parking_overlay
 
 # Page configuration
 st.set_page_config(
@@ -192,89 +188,51 @@ def admin_dashboard():
     
     tab1, tab2, tab3 = st.tabs(["📹 Live Monitoring", "📋 Reservations", "📊 Analytics"])
 
-    from video_processing import load_model, process_frame, draw_parking_overlay
-    
     with tab1:
-        uploaded_video = st.file_uploader("Upload CCTV footage", type=["mp4", "mov"])
+        st.header("CCTV Parking Monitoring")
+        uploaded_video = st.file_uploader(
+            "Upload CCTV footage", 
+            type=["mp4", "mov"],
+            key="unique_video_uploader"
+        )
+        
         if uploaded_video:
-            if st.button("Analyze"):
+            if st.button("Analyze Parking", key="analyze_button"):
                 with st.spinner("Processing video..."):
                     model = load_model()
-                    video_bytes = uploaded_video.read()
-                    with open("temp_video.mp4", "wb") as f:
-                        f.write(video_bytes)
+                    temp_video = "temp_video.mp4"
+                    with open(temp_video, "wb") as f:
+                        f.write(uploaded_video.getbuffer())
                     
-                    cap = cv2.VideoCapture("temp_video.mp4")
-                    st_frame = st.empty()  # Placeholder for live video
+                    cap = cv2.VideoCapture(temp_video)
+                    st_frame = st.empty()
+                    progress_bar = st.progress(0)
                     
-                    while cap.isOpened():
-                        ret, frame = cap.read()
-                        if not ret:
-                            break
-                        frame = cv2.resize(frame, (1020, 500))
-                        space_status = process_frame(frame, model)
-                        frame = draw_parking_overlay(frame, space_status)
-                        st_frame.image(frame, channels="BGR")
+                    try:
+                        frame_count = 0
+                        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                         
-                        # Update session state for analytics
-                        st.session_state.space_status = space_status
-                    
-                    cap.release()
-                    os.remove("temp_video.mp4")
-
-    with tab1:
-    st.header("CCTV Parking Monitoring")
-    uploaded_video = st.file_uploader(
-        "Upload CCTV footage", 
-        type=["mp4", "mov"],
-        key="unique_video_uploader"  # Add unique key to prevent duplicate widget errors
-    )
-    
-    if uploaded_video:
-        if st.button("Analyze Parking", key="analyze_button"):  # Unique key for button
-            with st.spinner("Processing video..."):
-                # Load model (cached)
-                model = load_model()
-                
-                # Create temp file
-                temp_video = "temp_video.mp4"
-                with open(temp_video, "wb") as f:
-                    f.write(uploaded_video.getbuffer())
-                
-                # Process video
-                cap = cv2.VideoCapture(temp_video)
-                st_frame = st.empty()  # Video display placeholder
-                progress_bar = st.progress(0)  # Add progress feedback
-                
-                try:
-                    frame_count = 0
-                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    
-                    while cap.isOpened():
-                        ret, frame = cap.read()
-                        if not ret:
-                            break
+                        while cap.isOpened():
+                            ret, frame = cap.read()
+                            if not ret:
+                                break
+                                
+                            frame = cv2.resize(frame, (1020, 500))
+                            space_status = process_frame(frame, model)
+                            annotated_frame = draw_parking_overlay(frame, space_status)
                             
-                        # Process frame
-                        frame = cv2.resize(frame, (1020, 500))
-                        space_status = process_frame(frame, model)
-                        annotated_frame = draw_parking_overlay(frame, space_status)
-                        
-                        # Update UI
-                        st_frame.image(annotated_frame, channels="BGR")
-                        progress_bar.progress(min(frame_count/total_frames, 1.0))
-                        frame_count += 1
-                        
-                        # Store results for analytics
-                        st.session_state.space_status = space_status
-                        
-                finally:
-                    cap.release()
-                    if os.path.exists(temp_video):
-                        os.remove(temp_video)  # Clean up temp file
-                    
-                    progress_bar.empty()
-                    st.success("Analysis complete!")
+                            st_frame.image(annotated_frame, channels="BGR")
+                            progress_bar.progress(min(frame_count/total_frames, 1.0))
+                            frame_count += 1
+                            
+                            st.session_state.space_status = space_status
+                            
+                    finally:
+                        cap.release()
+                        if os.path.exists(temp_video):
+                            os.remove(temp_video)
+                        progress_bar.empty()
+                        st.success("Analysis complete!")
 
     with tab2:
         st.header("Current Reservations")
