@@ -192,7 +192,7 @@ def admin_dashboard():
     
     tab1, tab2, tab3 = st.tabs(["📹 Live Monitoring", "📋 Reservations", "📊 Analytics"])
 
-    from video_processor import load_model, process_frame, draw_parking_overlay
+    from video_processing import load_model, process_frame, draw_parking_overlay
     
     with tab1:
         uploaded_video = st.file_uploader("Upload CCTV footage", type=["mp4", "mov"])
