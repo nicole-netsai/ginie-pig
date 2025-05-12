@@ -6,3 +6,5 @@ numpy
 pandas
 pillow
 torch
+plotly>=5.0.0
+
