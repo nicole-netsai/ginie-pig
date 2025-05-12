@@ -7,6 +7,10 @@ from datetime import datetime
 from ultralytics import YOLO
 import plotly.express as px
 from video_processing import load_model, process_frame, draw_parking_overlay
+try:
+    from video_processor import load_model, process_frame, draw_parking_overlay
+except ImportError:
+    from .video_processor import load_model, process_frame, draw_parking_overlay
 
 # Page configuration
 st.set_page_config(
