@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from ultralytics import YOLO
 import plotly.express as px
+from video_processor import load_model, process_frame, draw_parking_overlay
 
 # Page configuration
 st.set_page_config(
@@ -186,6 +187,36 @@ def admin_dashboard():
     st.title("🛠️ UZ Parking Administration")
     
     tab1, tab2, tab3 = st.tabs(["📹 Live Monitoring", "📋 Reservations", "📊 Analytics"])
+
+    from video_processor import load_model, process_frame, draw_parking_overlay
+    
+    with tab1:
+        uploaded_video = st.file_uploader("Upload CCTV footage", type=["mp4", "mov"])
+        if uploaded_video:
+            if st.button("Analyze"):
+                with st.spinner("Processing video..."):
+                    model = load_model()
+                    video_bytes = uploaded_video.read()
+                    with open("temp_video.mp4", "wb") as f:
+                        f.write(video_bytes)
+                    
+                    cap = cv2.VideoCapture("temp_video.mp4")
+                    st_frame = st.empty()  # Placeholder for live video
+                    
+                    while cap.isOpened():
+                        ret, frame = cap.read()
+                        if not ret:
+                            break
+                        frame = cv2.resize(frame, (1020, 500))
+                        space_status = process_frame(frame, model)
+                        frame = draw_parking_overlay(frame, space_status)
+                        st_frame.image(frame, channels="BGR")
+                        
+                        # Update session state for analytics
+                        st.session_state.space_status = space_status
+                    
+                    cap.release()
+                    os.remove("temp_video.mp4")
 
     with tab1:
         st.header("CCTV Parking Monitoring")
