@@ -1,10 +1,9 @@
-rich>=10.14.0,<14.0.0  # Force compatible version for Streamlit
+rich>=13.0.0  # Relaxed version (Streamlit works with newer versions)
 streamlit>=1.28.0
 ultralytics>=8.1.0
-opencv-python>=4.5.0
-numpy
-pandas
-pillow
-torch
+opencv-python-headless>=4.5.0  # Use headless for server environments
+numpy>=1.21.0  # Explicit minimum version
+pandas>=1.3.0
+pillow>=9.0.0
+torch>=2.0.0  # Match Ultralytics' recommended version
 plotly>=5.0.0
-
